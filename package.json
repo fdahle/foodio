@@ -1,0 +1,11 @@
+{
+  "name": "foodio",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,client -c blue,green \"npm --prefix api run dev\" \"npm --prefix client run dev\"",
+    "sheet": "node --no-warnings api/scripts/sheets.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

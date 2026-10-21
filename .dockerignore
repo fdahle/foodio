@@ -1,0 +1,17 @@
+# The image installs its own dependencies (Linux builds of sharp etc.), so no host node_modules may be copied in.
+**/node_modules
+client/dist
+
+# Secrets come in through the environment (docker-compose.yml), never through the image.
+**/.env
+**/.env.*
+
+# Data is a volume (./data), not part of the image.
+data
+
+.git
+.gitignore
+**/.DS_Store
+*.md
+Dockerfile
+docker-compose.yml

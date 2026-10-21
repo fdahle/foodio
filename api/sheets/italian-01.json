@@ -1,0 +1,9 @@
+{
+  "columns": 4,
+  "rows": 3,
+  "dishes": [
+    "italian/pizza-margherita", "italian/spaghetti-alla-carbonara", "italian/lasagne-alla-bolognese", "italian/risotto-alla-milanese",
+    "italian/minestrone", "italian/arancini", "italian/bruschetta", "italian/ossobuco",
+    "italian/tiramisu", "italian/cannoli", "italian/gelato", "italian/espresso"
+  ]
+}
