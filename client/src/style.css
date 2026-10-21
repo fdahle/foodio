@@ -32,8 +32,10 @@
   background: var(--bg);
 }
 
+/* Dark: follows the device unless Settings forces a theme (data-theme on <html>, see theme.js).
+   Both blocks hold the same values; keep them in sync. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --green: #22c55e;
     --green-dark: #4ade80;
     --amber: #fbbf24;
@@ -63,6 +65,36 @@
     --map-selected: #fbbf24;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --green: #22c55e;
+  --green-dark: #4ade80;
+  --amber: #fbbf24;
+  --bg: #0f1411;
+  --card: #18201b;
+  --input: #111814;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #2b3830;
+  --soft: #1c2b22;
+  --soft-text: #86efac;
+  --tried-border: #166534;
+  --star-off: #4b5563;
+  --danger: #f87171;
+  --danger-soft: #3b1a1a;
+  --danger-border: #7f1d1d;
+  --overlay: rgb(0 0 0 / .65);
+  --close-bg: rgb(24 32 27 / .9);
+  --toast-bg: #e5e7eb;
+  --toast-text: #111827;
+  --toast-action: #15803d;
+  --topbar: #14532d;
+  --on-green: #052e16;
+  /* map: dark steps rising to bright green against the dark surface */
+  --map-empty: #343a37;
+  --map-0: #16402a; --map-1: #1b5c38; --map-2: #1f7a45; --map-3: #22a055; --map-4: #34c46a; --map-done: #86efac;
+  --map-selected: #fbbf24;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

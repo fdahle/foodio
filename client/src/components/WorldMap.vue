@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import jsVectorMap from '../map.js'
+import { dark } from '../theme.js'
 
 const props = defineProps({
   cuisines: { type: Array, required: true },
@@ -82,17 +83,11 @@ function render() {
   })
 }
 
-const scheme = window.matchMedia('(prefers-color-scheme: dark)')
-onMounted(() => {
-  render()
-  scheme.addEventListener('change', render)
-})
+onMounted(render)
 watch(() => props.cuisines, render)
+watch(dark, render)
 watch(() => props.selected, code => map?.setSelectedRegions(code ? [code] : []))
-onBeforeUnmount(() => {
-  scheme.removeEventListener('change', render)
-  destroyMap()
-})
+onBeforeUnmount(destroyMap)
 
 defineExpose({ byCountry, countryName: code => map?._mapData?.paths[code]?.name || code })
 </script>

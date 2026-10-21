@@ -4,6 +4,7 @@ import { api } from '../api.js'
 import { CONTAINS } from '../util.js'
 import { me, setCatchUp } from '../session.js'
 import { installPrompt, installed, install } from '../pwa.js'
+import { THEMES, theme } from '../theme.js'
 import DishRow from '../components/DishRow.vue'
 
 // Catch-up hour (see WelcomeModal); the bar under the top bar shows the time left.
@@ -194,6 +195,15 @@ onMounted(async () => {
   </section>
 
   <h2 class="group">App & account</h2>
+  <section class="card stack">
+    <h3>Appearance</h3>
+    <p class="muted">“System” follows your device’s light or dark mode. Saved on this device only.</p>
+    <div class="chips">
+      <button v-for="(label, key) in THEMES" :key="key" class="chip" :class="{ active: theme === key }"
+        @click="theme = key">{{ label }}</button>
+    </div>
+  </section>
+
   <section class="card account">
     <div v-if="!installed" class="item stack">
       <h3>Install the app</h3>
