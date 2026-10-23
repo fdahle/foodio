@@ -2,19 +2,20 @@
 import { ref, onMounted } from 'vue'
 import { api } from '../api.js'
 import { me } from '../session.js'
-import { formatDate } from '../util.js'
+import { formatDate, FEEDBACK } from '../util.js'
 
-// Admins only (router meta.admin): invites, the user list and the dishes to add.
+// Admins only (router meta.admin): invites, the user list, feedback and the dishes to add.
 const users = ref([])
 const invites = ref([])
 const suggestions = ref([])
+const feedback = ref([])
 const error = ref('')
 
 async function load() {
   error.value = ''
   try {
-    ;[users.value, invites.value, suggestions.value] = await Promise.all([
-      api('/admin/users'), api('/admin/invites'), api('/admin/suggestions'),
+    ;[users.value, invites.value, suggestions.value, feedback.value] = await Promise.all([
+      api('/admin/users'), api('/admin/invites'), api('/admin/suggestions'), api('/admin/feedback'),
     ])
   } catch (e) {
     error.value = e.message
@@ -63,6 +64,15 @@ const setStatus = (s, status) => run(async () => {
 })
 const suggestionsText = () => suggestions.value
   .map(s => `- ${s.name} (${s.cuisine || 'no cuisine'})${s.note ? `: ${s.note}` : ''}`)
+  .join('\n')
+
+// Feedback: problems with a dish (fixed in the seed, by its key) and ideas and bugs. Copies like the dishes to add.
+const setFeedbackStatus = (f, status) => run(async () => {
+  await api(`/admin/feedback/${f.id}`, { method: 'PATCH', body: { status } })
+  feedback.value = feedback.value.filter(x => x.id !== f.id)
+})
+const feedbackText = () => feedback.value
+  .map(f => `- ${FEEDBACK[f.kind].replace(/^\S+\s/, '')}${f.dish_key ? ` (${f.dish_key})` : ''}${f.note ? `: ${f.note}` : ''}`)
   .join('\n')
 
 // Invites: the code is only shown right after creating it (the server keeps just a hash).
@@ -188,6 +198,31 @@ const removeUser = u => run(async () => {
 
   <section class="card block">
     <div class="row between">
+      <h3>Feedback <span class="muted count">{{ feedback.length }}</span></h3>
+      <button v-if="feedback.length" class="btn small" @click="copy(feedbackText(), 'feedback')">{{ copied === 'feedback' ? 'Copied!' : 'Copy list' }}</button>
+    </div>
+    <p class="muted">Sent with <i>Feedback</i> in the top bar, or <i>Report a problem</i> on a dish.
+      Fix dishes in the seed (see CLAUDE.md), then tick them off.</p>
+    <div v-if="feedback.length" class="list scroll">
+      <div v-for="f in feedback" :key="f.id" class="list-item">
+        <div class="grow">
+          <b>{{ FEEDBACK[f.kind] || f.kind }}</b>
+          <template v-if="f.dish_id">
+            <span class="muted"> · </span>
+            <router-link :to="`/cuisine/${f.cuisine_id}?dish=${f.dish_id}`" class="dish-link">{{ f.cuisine_emoji }} {{ f.dish }}</router-link>
+          </template>
+          <span v-if="f.note" class="note">“{{ f.note }}”</span>
+          <span class="muted small-line">from {{ f.username || 'a removed user' }}, {{ ago(f.created_at) }}</span>
+        </div>
+        <button class="btn small primary" @click="setFeedbackStatus(f, 'done')">Done</button>
+        <button class="btn small" @click="setFeedbackStatus(f, 'dismissed')">Dismiss</button>
+      </div>
+    </div>
+    <p v-else class="muted empty-note">No open feedback.</p>
+  </section>
+
+  <section class="card block">
+    <div class="row between">
       <h3>Dishes to add <span class="muted count">{{ suggestions.length }}</span></h3>
       <button v-if="suggestions.length" class="btn small" @click="copy(suggestionsText(), 'suggestions')">{{ copied === 'suggestions' ? 'Copied!' : 'Copy list' }}</button>
     </div>
@@ -225,4 +260,6 @@ h1 { font-size: 1.4rem; margin-bottom: .4rem; }
 /* Long lists scroll inside their card instead of stretching the page. */
 .scroll { max-height: 24rem; overflow-y: auto; overscroll-behavior: contain; }
 .empty-note { font-style: italic; }
+.note { display: block; margin-top: .15rem; white-space: pre-line; overflow-wrap: anywhere; }
+.dish-link { color: var(--green-dark); }
 </style>

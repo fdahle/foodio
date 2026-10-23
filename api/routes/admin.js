@@ -96,4 +96,22 @@ router.patch('/suggestions/:id', (req, res) => {
   res.json({ ok: true })
 })
 
+router.get('/feedback', (_req, res) => {
+  res.json(db.prepare(`
+    SELECT f.id, f.kind, f.note, f.created_at, f.dish_id, d.name AS dish, d.key AS dish_key, d.cuisine_id,
+      c.emoji AS cuisine_emoji, u.username
+    FROM feedback f LEFT JOIN dishes d ON d.id = f.dish_id LEFT JOIN cuisines c ON c.id = d.cuisine_id
+      LEFT JOIN users u ON u.id = f.user_id
+    WHERE f.status = 'open' ORDER BY f.created_at
+  `).all())
+})
+
+// Done (fixed or answered) or dismissed.
+router.patch('/feedback/:id', (req, res) => {
+  const status = ['done', 'dismissed'].includes(req.body?.status) ? req.body.status : null
+  if (!status) return res.status(400).json({ error: 'Invalid status' })
+  db.prepare('UPDATE feedback SET status = ? WHERE id = ?').run(status, toId(req.params.id))
+  res.json({ ok: true })
+})
+
 export default router

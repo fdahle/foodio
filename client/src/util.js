@@ -66,6 +66,20 @@ export const CONTAINS = {
   honey: '🍯 Honey',
 }
 
+// What feedback is about: the first group for "Report a problem" on a dish, the second for the Feedback button.
+// The kinds are also checked in api/routes/food.js.
+export const FEEDBACK = {
+  picture: '🖼️ Wrong picture',
+  description: '📝 Wrong description or ingredients',
+  cuisine: '🗺️ Wrong cuisine or region',
+  duplicate: '👯 Listed twice',
+  idea: '💡 Idea',
+  bug: '🐞 Something’s broken',
+  other: '💬 Something else',
+}
+export const DISH_FEEDBACK = ['picture', 'description', 'cuisine', 'duplicate', 'other']
+export const GENERAL_FEEDBACK = ['idea', 'bug', 'other']
+
 export const wikiUrl = title => `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
 
 // "Rabbit Stew (Stuffat tal-Fenek)" → ['Rabbit Stew', 'Stuffat tal-Fenek'], so cards can show the local name smaller.

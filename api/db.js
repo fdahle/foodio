@@ -116,6 +116,17 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 
+  -- Problems with a dish (dish_id set) or general ideas and bugs; admins see them in the Users tab.
+  CREATE TABLE IF NOT EXISTS feedback (
+    id         INTEGER PRIMARY KEY,
+    user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    dish_id    INTEGER REFERENCES dishes(id) ON DELETE SET NULL,
+    kind       TEXT NOT NULL,
+    note       TEXT,
+    status     TEXT NOT NULL DEFAULT 'open',
+    created_at TEXT NOT NULL
+  );
+
   -- Only a hash of the code is stored (invites.js).
   CREATE TABLE IF NOT EXISTS invites (
     id         INTEGER PRIMARY KEY,

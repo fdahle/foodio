@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { toast, runToastAction } from './toast.js'
+import { toast, runToastAction, showToast } from './toast.js'
 import { me } from './session.js'
 import CatchUpBar from './components/CatchUpBar.vue'
 import NavIcon from './components/NavIcon.vue'
+import FeedbackSheet from './components/FeedbackSheet.vue'
 
 const route = useRoute()
 // A single cuisine (/cuisine/:id) belongs to the Cuisines section.
@@ -24,6 +25,13 @@ const EXTRA = computed(() => [
   { to: '/settings', label: 'Settings', icon: 'settings' },
   ...(me.isAdmin ? [{ to: '/users', label: 'Users', icon: 'users' }] : []),
 ])
+
+// Ideas and bugs; problems with a dish are reported from its sheet.
+const feedbackOpen = ref(false)
+function onFeedbackSent() {
+  feedbackOpen.value = false
+  showToast('Thanks for the feedback!')
+}
 </script>
 
 <template>
@@ -34,8 +42,10 @@ const EXTRA = computed(() => [
       <nav class="top-nav">
         <router-link v-for="t in [...TABS, ...EXTRA]" :key="t.to" :to="t.to" :class="{ current: section === t.to }"
           :data-text="t.label">{{ t.label }}</router-link>
+        <button class="link" @click="feedbackOpen = true">Feedback</button>
       </nav>
       <nav class="corner">
+        <button class="link" aria-label="Feedback" @click="feedbackOpen = true"><NavIcon name="feedback" /></button>
         <router-link v-for="t in EXTRA" :key="t.to" :to="t.to" :class="{ current: section === t.to }" :aria-label="t.label">
           <NavIcon :name="t.icon" />
         </router-link>
@@ -60,11 +70,13 @@ const EXTRA = computed(() => [
     <span class="grow">{{ toast.message }}</span>
     <button v-if="toast.action" class="link toast-action" @click="runToastAction">{{ toast.action.label }}</button>
   </div>
+  <FeedbackSheet v-if="feedbackOpen" @close="feedbackOpen = false" @sent="onFeedbackSent" />
 </template>
 
 <style scoped>
 .top-nav { display: flex; gap: 1rem; align-items: center; font-size: .95rem; }
-.top-nav a { opacity: .85; }
+.top-nav a, .top-nav button { opacity: .85; }
+.top-nav button { padding: 0; }
 .top-nav a.current { opacity: 1; font-weight: 700; }
 /* An invisible bold copy of the label reserves its width, so the bar doesn't shift when a link turns bold. */
 .top-nav [data-text] { display: inline-flex; flex-direction: column; }
@@ -73,7 +85,7 @@ const EXTRA = computed(() => [
 }
 .corner, .tabbar { display: none; }
 .corner { gap: .25rem; margin: -.4rem -.5rem -.4rem 0; }
-.corner a { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; opacity: .85; }
+.corner a, .corner button { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; opacity: .85; padding: 0; }
 .corner a.current { opacity: 1; background: rgb(255 255 255 / .2); }
 @media (max-width: 600px) {
   .top-nav { display: none; }

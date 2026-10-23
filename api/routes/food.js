@@ -543,6 +543,24 @@ router.post('/suggestions', (req, res) => {
 })
 const dishCuisineExists = id => db.prepare('SELECT 1 FROM cuisines WHERE id = ?').get(id)
 
+// "Report a problem" on a dish, or the Feedback button for anything else; admins see these in the Users tab.
+// A dish report says enough by its kind; anything else needs a note.
+const FEEDBACK_KINDS = ['picture', 'description', 'cuisine', 'duplicate', 'idea', 'bug', 'other']
+router.post('/feedback', (req, res) => {
+  const kind = FEEDBACK_KINDS.includes(req.body.kind) ? req.body.kind : null
+  if (!kind) return res.status(400).json({ error: 'Pick what it’s about' })
+  const dishId = toId(req.body.dish_id)
+  const dish = dishId && db.prepare('SELECT id FROM dishes WHERE id = ?').get(dishId)
+  const note = str(req.body.note, 1000) || null
+  if (!note && (!dish || kind === 'other')) return res.status(400).json({ error: 'Please write a few words' })
+  const open = db.prepare("SELECT COUNT(*) AS n FROM feedback WHERE user_id = ? AND status = 'open'").get(req.user.id).n
+  if (open >= 30 && !req.user.isAdmin) return res.status(429).json({ error: 'You have a lot of open feedback already; wait until it’s handled' })
+  db.prepare(`
+    INSERT INTO feedback (user_id, dish_id, kind, note, created_at) VALUES (?, ?, ?, ?, datetime('now'))
+  `).run(req.user.id, dish ? dish.id : null, kind, note)
+  res.status(201).json({ ok: true })
+})
+
 // Your own progress and settings; for admins also the catalogue additions and edits.
 router.get('/export', (req, res) => {
   res.setHeader('Content-Disposition', 'attachment; filename="foodio-backup.json"')

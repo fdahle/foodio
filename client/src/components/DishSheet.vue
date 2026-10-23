@@ -8,6 +8,7 @@ import { showToast, alsoIn } from '../toast.js'
 import StarRating from './StarRating.vue'
 import DishDetailsFields from './DishDetailsFields.vue'
 import AiPromptHelp from './AiPromptHelp.vue'
+import FeedbackSheet from './FeedbackSheet.vue'
 import { me } from '../session.js'
 
 const props = defineProps({
@@ -165,7 +166,14 @@ const remove = () => run(async () => {
   emit('removed', {})
 })
 
-const onKey = e => e.key === 'Escape' && close()
+// Wrong picture, description, cuisine…: goes to the admins' Users tab.
+const reporting = ref(false)
+function onReported() {
+  reporting.value = false
+  showToast('Thanks! The problem was reported.')
+}
+
+const onKey = e => e.key === 'Escape' && !reporting.value && close()
 onMounted(() => window.addEventListener('keydown', onKey))
 // The back button closes the sheet without a blur, so save text that's still being typed.
 onBeforeUnmount(() => {
@@ -282,6 +290,8 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
+
+        <div><button class="link muted report" @click="reporting = true">⚠️ Report a problem with this dish</button></div>
       </div>
 
       <div class="status">
@@ -289,6 +299,7 @@ onBeforeUnmount(() => {
         <button class="btn" :class="{ wish: dish.status === 'wishlist' }" :disabled="busy" @click="setStatus('wishlist')">☆ Want to try</button>
       </div>
     </div>
+    <FeedbackSheet v-if="reporting" :dish="dish" @close="reporting = false" @sent="onReported" />
   </div>
 </template>
 
@@ -334,6 +345,7 @@ onBeforeUnmount(() => {
 .also .chip { font-size: .8rem; padding: .2rem .6rem; }
 .hidden-tag { background: var(--danger-soft); color: var(--danger); }
 .toggle { padding: .3rem 0; }
+.report { padding: .3rem 0; font-size: .85rem; }
 .edit .stack { padding-top: .5rem; }
 .pic { flex-wrap: wrap; }
 .emoji-in { width: 4rem; text-align: center; align-self: flex-end; }

@@ -69,6 +69,14 @@ all their details. Read the open ones with
 and once a dish is in the seed, mark it `update suggestions set status = 'done' where id = …`
 (`dismissed` for ones not added: duplicates, near-duplicates, not a dish).
 
+## Feedback
+
+*Report a problem* on a dish and the *Feedback* button in the top bar fill the `feedback` table (shown under
+*Feedback* in the Users tab). Dish reports (`picture description cuisine duplicate other`) are fixed in the seed
+by the dish's key; `idea bug other` without a dish are about the app. Read the open ones with
+`sqlite3 data/foodio.db "select f.id, f.kind, d.key, f.note from feedback f left join dishes d on d.id = f.dish_id where f.status = 'open'"`,
+and mark them `update feedback set status = 'done' where id = …` (or `dismissed`).
+
 ## Checking changes
 
 After a seed change: reseed, then check that the dish count is what you expect, that new keys didn't
