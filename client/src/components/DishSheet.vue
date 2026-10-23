@@ -167,7 +167,12 @@ const remove = () => run(async () => {
 
 const onKey = e => e.key === 'Escape' && close()
 onMounted(() => window.addEventListener('keydown', onKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+// The back button closes the sheet without a blur, so save text that's still being typed.
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  saveText('note')
+  saveText('place')
+})
 </script>
 
 <template>

@@ -83,13 +83,12 @@ const sections = computed(() => {
   return out.filter(s => s.dishes.length)
 })
 
-// Dish sheet is driven by ?dish= so search results and links can open it directly. A dish opened from
-// another page (home, search, wishlist…) closes back to that page; one opened here just closes.
+// Dish sheet is driven by ?dish= so search results and links can open it directly. Opening one here adds a
+// history entry, so the phone's back button closes it instead of leaving the cuisine. Closing goes back to
+// where it was opened (this cuisine, or home, search, wishlist…); a dish opened by a link just closes.
 const openDish = computed(() => cuisine.value?.dishes.find(d => d.id === Number(route.query.dish)) ?? null)
-let openedElsewhere = false
-watch(() => route.params.id, () => { openedElsewhere = !!route.query.dish && !!window.history.state?.back }, { immediate: true })
-const open = d => router.replace({ query: { dish: d.id } })
-const close = () => (openedElsewhere ? router.back() : router.replace({ query: {} }))
+const open = d => router.push({ query: { dish: d.id } })
+const close = () => (window.history.state?.back ? router.back() : router.replace({ query: {} }))
 
 function replaceDish(next) {
   const i = cuisine.value.dishes.findIndex(d => d.id === next.id)
@@ -102,7 +101,7 @@ async function setUser(d, body) {
   return synced
 }
 
-// The quick check is easy to hit by accident while scrolling on a phone, so it always offers undo.
+// Tapping a card toggles tried; that's easy to do by accident on a phone, so it always offers undo.
 async function quickTried(d) {
   const before = { status: d.status, tried_on: d.tried_on, rating: d.rating }
   const nowTried = d.status !== 'tried'
@@ -124,7 +123,6 @@ async function quickTried(d) {
 }
 
 async function onRemoved({ movedTo }) {
-  openedElsewhere = false
   await router.replace({ query: {} })
   if (movedTo) await router.push(`/cuisine/${movedTo}`)
   else await load()
@@ -210,13 +208,14 @@ async function deleteCuisine() {
       <h2 v-if="sections.length > 1 || cuisine.regions.length > 1">{{ s.name }}</h2>
       <div class="dishes">
         <div v-for="d in s.dishes" :key="d.id" class="card dish" :class="{ tried: d.status === 'tried', hidden: d.hidden }"
-          role="button" tabindex="0" @click="open(d)" @keydown.enter="open(d)">
+          role="button" tabindex="0" :aria-pressed="d.status === 'tried'" :aria-label="`${d.name}: ${d.status === 'tried' ? 'tried' : 'not tried'}`"
+          @click="quickTried(d)" @keydown.enter.self="quickTried(d)">
           <div class="thumb" :class="{ placeholder: !d.image }">
             <img v-if="d.image" :src="d.image" :alt="d.name" loading="lazy" />
             <span v-else>{{ d.emoji || '🍽️' }}</span>
             <span v-if="d.status === 'wishlist'" class="wish">☆</span>
-            <button class="check" :class="{ on: d.status === 'tried' }" :aria-label="d.status === 'tried' ? 'Mark as not tried' : 'Mark as tried'"
-              @click.stop="quickTried(d)">✓</button>
+            <button class="info-btn" :aria-label="`About ${d.name}`" @click.stop="open(d)">i</button>
+            <span v-if="d.status === 'tried'" class="check" aria-hidden="true">✓</span>
           </div>
           <div class="info">
             <span class="name">{{ splitName(d.name)[0] }}</span>
@@ -276,14 +275,16 @@ async function deleteCuisine() {
 /* Break between words; only split a word that's wider than the card on its own. */
 .name { font-weight: 600; font-size: .9rem; line-height: 1.25; overflow-wrap: break-word; text-wrap: balance; }
 .alt { font-size: .78rem; line-height: 1.2; overflow-wrap: break-word; text-wrap: balance; }
-/* Sits on the image corner so long names get the card's full width. */
-.check {
-  position: absolute; right: .4rem; bottom: .4rem; width: 1.9rem; height: 1.9rem; border-radius: 50%; padding: 0;
-  display: grid; place-items: center; font-size: 1rem;
-  border: 2px solid #fff; background: rgb(0 0 0 / .25); color: rgb(255 255 255 / .85); font-weight: 800;
-  box-shadow: 0 1px 3px rgb(0 0 0 / .3);
+/* Both sit on the image corners so long names get the card's full width. */
+.check, .info-btn {
+  position: absolute; width: 1.9rem; height: 1.9rem; border-radius: 50%; padding: 0;
+  display: grid; place-items: center; font-size: 1rem; font-weight: 800;
+  border: 2px solid #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .3);
 }
-.check.on { background: var(--green); color: var(--on-green); }
+.check { right: .4rem; bottom: .4rem; background: var(--green); color: var(--on-green); pointer-events: none; }
+.info-btn { right: .4rem; top: .4rem; background: rgb(0 0 0 / .35); color: #fff; font-family: Georgia, serif; font-style: italic; }
+/* A bigger invisible hit area than the visible circle, so it's easy to tap without toggling the card. */
+.info-btn::after { content: ''; position: absolute; inset: -.6rem; }
 .add-dish { margin-top: 1.2rem; }
 .danger-zone { margin-top: 2rem; }
 </style>

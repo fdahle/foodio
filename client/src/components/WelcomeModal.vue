@@ -35,7 +35,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <ol>
         <li>Eat vegetarian, vegan or avoid something? Set it in <router-link to="/settings" @click="emit('close')">Settings</router-link>,
           and dishes that don’t fit disappear.</li>
-        <li>Browse the cuisines and tick the dishes you’ve already tried (the ✓ on each picture).</li>
+        <li>Browse the cuisines and tap the dishes you’ve already tried to tick them (the ⓘ shows more about a dish).</li>
         <li>Then let “What to try next?” and the monthly challenge give you ideas.</li>
       </ol>
 
