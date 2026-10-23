@@ -131,25 +131,3 @@ export function groupStats(uid) {
     onlyYou,
   }
 }
-
-// For admins, over everyone (not only those who share): which parts of the catalogue nobody uses.
-export function catalogueHealth() {
-  const counts = db.prepare(`
-    SELECT
-      (SELECT COUNT(*) FROM dishes) AS dishes,
-      (SELECT COUNT(DISTINCT dish_id) FROM user_dishes WHERE status = 'tried') AS tried,
-      (SELECT COUNT(DISTINCT dish_id) FROM user_dishes WHERE status IS NOT NULL) AS touched
-  `).get()
-  const unstarted = db.prepare(`
-    SELECT c.id, c.name, c.emoji FROM cuisines c
-    WHERE NOT EXISTS (SELECT 1 FROM dishes d JOIN user_dishes u ON u.dish_id = d.id WHERE d.cuisine_id = c.id AND u.status IS NOT NULL)
-    ORDER BY c.name
-  `).all()
-  const mostHidden = db.prepare(`
-    SELECT d.id, d.name, d.emoji, c.id AS cuisine_id, c.name AS cuisine, c.emoji AS cuisine_emoji, COUNT(*) AS people,
-      d.key, d.slug, c.slug AS cuisine_slug
-    FROM user_dishes u JOIN dishes d ON d.id = u.dish_id JOIN cuisines c ON c.id = d.cuisine_id
-    WHERE u.hidden = 1 GROUP BY d.id ORDER BY people DESC, d.name LIMIT 15
-  `).all()
-  return { ...counts, unstarted, mostHidden }
-}

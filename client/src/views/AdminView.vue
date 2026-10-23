@@ -2,21 +2,19 @@
 import { ref, onMounted } from 'vue'
 import { api } from '../api.js'
 import { me } from '../session.js'
-import { formatDate, pct } from '../util.js'
-import DishRow from '../components/DishRow.vue'
+import { formatDate } from '../util.js'
 
-// Admins only (router meta.admin): dishes to add, how the catalogue is used, invites and the user list.
+// Admins only (router meta.admin): invites, the user list and the dishes to add.
 const users = ref([])
 const invites = ref([])
 const suggestions = ref([])
-const catalogue = ref(null)
 const error = ref('')
 
 async function load() {
   error.value = ''
   try {
-    ;[users.value, invites.value, suggestions.value, catalogue.value] = await Promise.all([
-      api('/admin/users'), api('/admin/invites'), api('/admin/suggestions'), api('/admin/catalogue'),
+    ;[users.value, invites.value, suggestions.value] = await Promise.all([
+      api('/admin/users'), api('/admin/invites'), api('/admin/suggestions'),
     ])
   } catch (e) {
     error.value = e.message
@@ -118,47 +116,6 @@ const removeUser = u => run(async () => {
   <h1>Users</h1>
   <p v-if="error" class="error">{{ error }}</p>
 
-  <section v-if="suggestions.length" class="card block">
-    <div class="row between">
-      <h3>Dishes to add <span class="muted count">{{ suggestions.length }}</span></h3>
-      <button class="btn small" @click="copy(suggestionsText(), 'suggestions')">{{ copied === 'suggestions' ? 'Copied!' : 'Copy list' }}</button>
-    </div>
-    <div class="list">
-      <div v-for="s in suggestions" :key="s.id" class="list-item">
-        <div class="grow">
-          <b>{{ s.name }}</b>
-          <span class="muted"> · {{ s.cuisine ? `${s.cuisine_emoji} ${s.cuisine}` : 'no cuisine' }}</span>
-          <span class="muted small-line">from {{ s.username || 'a removed user' }}, {{ ago(s.created_at) }}<template v-if="s.note"> · “{{ s.note }}”</template></span>
-        </div>
-        <button class="btn small primary" @click="setStatus(s, 'done')">Done</button>
-        <button class="btn small" @click="setStatus(s, 'dismissed')">Dismiss</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Over all users, sharing or not: which parts of the catalogue nobody uses. -->
-  <section v-if="catalogue" class="card block">
-    <h3>Catalogue</h3>
-    <p class="muted">
-      {{ catalogue.tried }} of {{ catalogue.dishes }} dishes ({{ pct(catalogue.tried, catalogue.dishes) }}%) tried by someone,
-      {{ catalogue.touched - catalogue.tried }} more only on wishlists.
-    </p>
-    <details v-if="catalogue.unstarted.length">
-      <summary>{{ catalogue.unstarted.length }} cuisine{{ catalogue.unstarted.length === 1 ? '' : 's' }} nobody has started</summary>
-      <p class="muted unstarted">
-        <template v-for="(c, i) in catalogue.unstarted" :key="c.id"><router-link :to="`/cuisine/${c.id}`">{{ c.emoji }} {{ c.name }}</router-link><template v-if="i < catalogue.unstarted.length - 1"> · </template></template>
-      </p>
-    </details>
-    <details v-if="catalogue.mostHidden.length">
-      <summary>Most hidden dishes</summary>
-      <div class="list">
-        <DishRow v-for="d in catalogue.mostHidden" :key="d.id" :dish="d" :mark="false">
-          <span class="muted">hidden by {{ d.people }}</span>
-        </DishRow>
-      </div>
-    </details>
-  </section>
-
   <section class="card block">
     <h3>Invite a friend</h3>
     <p class="muted">Creates a link for one person. It works once and for 7 days.</p>
@@ -174,7 +131,7 @@ const removeUser = u => run(async () => {
         <button class="btn small" @click="copy(inviteLink(created.code), 'link')">{{ copied === 'link' ? 'Copied!' : 'Copy link only' }}</button>
       </div>
     </div>
-    <div v-if="invites.length" class="list">
+    <div v-if="invites.length" class="list scroll">
       <div v-for="i in invites" :key="i.id" class="list-item">
         <div class="grow">
           {{ i.note || 'Invite' }}
@@ -199,7 +156,7 @@ const removeUser = u => run(async () => {
         <button class="btn small" @click="tempPassword = null">Done</button>
       </div>
     </div>
-    <div class="list">
+    <div class="list scroll">
       <div v-for="u in users" :key="u.id" class="user">
         <div class="row between">
           <form v-if="renaming === u.id" class="row grow" @submit.prevent="saveRename(u)">
@@ -228,6 +185,27 @@ const removeUser = u => run(async () => {
       </div>
     </div>
   </section>
+
+  <section class="card block">
+    <div class="row between">
+      <h3>Dishes to add <span class="muted count">{{ suggestions.length }}</span></h3>
+      <button v-if="suggestions.length" class="btn small" @click="copy(suggestionsText(), 'suggestions')">{{ copied === 'suggestions' ? 'Copied!' : 'Copy list' }}</button>
+    </div>
+    <p class="muted">Suggested by friends with <i>Suggest a dish</i>, or by you with <i>Add a dish</i>, on a cuisine’s page.
+      They’re added to the catalogue by hand (see CLAUDE.md).</p>
+    <div v-if="suggestions.length" class="list scroll">
+      <div v-for="s in suggestions" :key="s.id" class="list-item">
+        <div class="grow">
+          <b>{{ s.name }}</b>
+          <span class="muted"> · {{ s.cuisine ? `${s.cuisine_emoji} ${s.cuisine}` : 'no cuisine' }}</span>
+          <span class="muted small-line">from {{ s.username || 'a removed user' }}, {{ ago(s.created_at) }}<template v-if="s.note"> · “{{ s.note }}”</template></span>
+        </div>
+        <button class="btn small primary" @click="setStatus(s, 'done')">Done</button>
+        <button v-if="suggestions.length" class="btn small" @click="setStatus(s, 'dismissed')">Dismiss</button>
+      </div>
+    </div>
+    <p v-else class="muted empty-note">Nothing suggested right now.</p>
+  </section>
 </template>
 
 <style scoped>
@@ -244,6 +222,7 @@ h1 { font-size: 1.4rem; margin-bottom: .4rem; }
 .actions { gap: 1rem; margin-top: .3rem; font-size: .85rem; }
 .actions .link { padding: 0; }
 .danger-link { color: var(--red, #dc2626); }
-summary { cursor: pointer; font-size: .9rem; }
-.unstarted { margin-top: .4rem; line-height: 1.6; }
+/* Long lists scroll inside their card instead of stretching the page. */
+.scroll { max-height: 24rem; overflow-y: auto; overscroll-behavior: contain; }
+.empty-note { font-style: italic; }
 </style>

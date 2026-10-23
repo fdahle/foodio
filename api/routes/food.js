@@ -77,7 +77,7 @@ function whiteImageUrl(file) {
 
 // List rows (search, suggestions, wishlist…) show the illustration on white.
 // Expects key, slug and cuisine_slug in the row; they're replaced by a single image URL.
-export const withImage = ({ key, slug, cuisine_slug, ...d }) => ({
+const withImage = ({ key, slug, cuisine_slug, ...d }) => ({
   ...d,
   image: whiteImageUrl(`${key || `${cuisine_slug}/${slug}`}.webp`),
 })
