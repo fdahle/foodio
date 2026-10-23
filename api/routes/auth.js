@@ -5,6 +5,7 @@ import { requireLogin, setAuthCookie, clearAuthCookie } from '../middleware/auth
 import { findInvite } from '../invites.js'
 import { applyDiet } from '../diet.js'
 import { catchUpUntil } from '../catchup.js'
+import { sharesStats } from '../group.js'
 
 const router = Router()
 
@@ -94,7 +95,7 @@ router.post('/logout', (_req, res) => {
 router.get('/me', requireLogin, (req, res) => {
   const { id, username, isAdmin, mustChangePassword } = req.user
   const welcomed = !!db.prepare("SELECT 1 FROM user_settings WHERE user_id = ? AND key = 'welcomed'").get(id)
-  res.json({ loggedIn: true, id, username, isAdmin, mustChangePassword, welcomed, catchUpUntil: catchUpUntil(id) })
+  res.json({ loggedIn: true, id, username, isAdmin, mustChangePassword, welcomed, catchUpUntil: catchUpUntil(id), shareStats: sharesStats(id) })
 })
 
 // The welcome is shown once per account, on whichever device they log in first.

@@ -4,6 +4,8 @@ import db from '../db.js'
 import { requireAdmin } from '../middleware/auth.js'
 import { createInvite } from '../invites.js'
 import { temporaryPassword } from '../users.js'
+import { catalogueHealth } from '../group.js'
+import { withImage } from './food.js'
 
 const router = Router()
 router.use(requireAdmin)
@@ -86,6 +88,11 @@ router.get('/suggestions', (_req, res) => {
     FROM suggestions s LEFT JOIN cuisines c ON c.id = s.cuisine_id LEFT JOIN users u ON u.id = s.user_id
     WHERE s.status = 'open' ORDER BY s.created_at
   `).all())
+})
+
+router.get('/catalogue', (_req, res) => {
+  const c = catalogueHealth()
+  res.json({ ...c, mostHidden: c.mostHidden.map(withImage) })
 })
 
 // Done (added) or dismissed.

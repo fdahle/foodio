@@ -1,8 +1,9 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { api } from '../api.js'
+import { me } from '../session.js'
 
-// For everyone who can't add dishes: ask an admin to add one (it shows up in their Users tab).
+// Asks for a dish to be added; it shows up in the admins' Users tab and is added to the seed by hand.
 const props = defineProps({ cuisine: { type: Object, required: true } })
 const emit = defineEmits(['close', 'sent'])
 
@@ -31,15 +32,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 <template>
   <div class="overlay" @click.self="emit('close')">
-    <form class="sheet card stack" role="dialog" aria-modal="true" aria-label="Suggest a dish" @submit.prevent="send">
+    <form class="sheet card stack" role="dialog" aria-modal="true" :aria-label="me.isAdmin ? 'Add a dish' : 'Suggest a dish'" @submit.prevent="send">
       <button type="button" class="close link" aria-label="Close" @click="emit('close')">✕</button>
-      <h2>Suggest a dish for {{ cuisine.name }}</h2>
-      <p class="muted">Missing a dish? Suggest it and it can be added for everyone.</p>
+      <template v-if="me.isAdmin">
+        <h2>Add a dish to {{ cuisine.name }}</h2>
+        <p class="muted">It goes on the to-add list in the Users tab, to be added to the catalogue with all its details.</p>
+      </template>
+      <template v-else>
+        <h2>Suggest a dish for {{ cuisine.name }}</h2>
+        <p class="muted">Missing a dish? Suggest it and it can be added for everyone.</p>
+      </template>
       <input v-model="name" placeholder="Dish name" maxlength="100" required />
       <textarea v-model="note" rows="2" maxlength="300" placeholder="Anything to know? (optional, e.g. what it is or a link)" />
       <p v-if="error" class="error">{{ error }}</p>
       <div class="row">
-        <button class="btn primary" :disabled="busy">Send suggestion</button>
+        <button class="btn primary" :disabled="busy">{{ me.isAdmin ? 'Put on the list' : 'Send suggestion' }}</button>
         <button type="button" class="btn" @click="emit('close')">Cancel</button>
       </div>
     </form>

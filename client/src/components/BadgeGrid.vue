@@ -45,10 +45,10 @@ const sections = computed(() => GROUPS.map(name => {
             <span v-for="i in b.tiers" :key="i" :class="{ on: i <= b.tier }" />
           </span>
           <span class="muted">{{ b.tier === b.tiers ? '✓ ' : b.tier ? 'Next: ' : '' }}{{ b.desc }}</span>
-          <template v-if="b.tier < b.tiers && !b.secret">
+          <div v-if="b.tier < b.tiers && !b.secret" class="foot">
             <div class="bar"><div class="tried" :style="{ width: `${(b.progress / b.target) * 100}%` }" /></div>
             <span class="muted">{{ b.progress }} / {{ b.target }}</span>
-          </template>
+          </div>
         </div>
         <div v-if="s.hiddenSecrets" class="b locked">
           <span class="emoji">❓</span>
@@ -76,6 +76,8 @@ const sections = computed(() => GROUPS.map(name => {
 }
 .b .emoji { font-size: 2rem; }
 .b .muted { font-size: .75rem; }
+/* Pinned to the bottom, so bars line up across a row whatever the length of the name and description. */
+.foot { margin-top: auto; padding-top: .2rem; width: 100%; display: flex; flex-direction: column; align-items: center; gap: .25rem; }
 .b .bar { width: 100%; height: .35rem; }
 .pips { display: flex; gap: 3px; }
 .pips span { width: .45rem; height: .45rem; border-radius: 50%; background: var(--border); }

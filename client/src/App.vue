@@ -20,7 +20,12 @@ const section = computed(() => route.path.startsWith('/cuisine') ? '/cuisines' :
         <router-link to="/cuisines" :class="{ current: section === '/cuisines' }" data-text="Cuisines">Cuisines</router-link>
         <router-link to="/wishlist" :class="{ current: section === '/wishlist' }" data-text="Wishlist">Wishlist</router-link>
         <router-link to="/profile" :class="{ current: section === '/profile' }" data-text="Profile">Profile</router-link>
-        <router-link to="/settings" :class="{ current: section === '/settings' }" data-text="Settings">Settings</router-link>
+        <router-link to="/stats" :class="{ current: section === '/stats' }" aria-label="Stats">
+          <span class="icon">📊</span><span class="label" data-text="Stats">Stats</span>
+        </router-link>
+        <router-link to="/settings" :class="{ current: section === '/settings' }" aria-label="Settings">
+          <span class="icon">⚙️</span><span class="label" data-text="Settings">Settings</span>
+        </router-link>
         <router-link v-if="me.isAdmin" to="/users" :class="{ current: section === '/users' }" aria-label="Users">
           <span class="icon">👥</span><span class="label" data-text="Users">Users</span>
         </router-link>
@@ -51,12 +56,17 @@ nav [data-text]::after {
   content: attr(data-text); font-weight: 700; height: 0; overflow: hidden; visibility: hidden; pointer-events: none;
 }
 nav .icon { display: none; }
+/* On a phone the last links turn into icons so the bar fits. */
 @media (max-width: 480px) {
   nav { gap: .8rem; font-size: .88rem; }
   .brand-name { display: none; }
   nav .icon { display: inline; }
+  nav a.current .icon { border-bottom: 2px solid #fff; padding-bottom: 2px; }
   nav .label { display: none; }
 }
+@media (max-width: 400px) { nav { gap: .6rem; font-size: .85rem; } }
+/* The logo links home too, so it's what goes on the smallest phones. */
+@media (max-width: 340px) { .brand { display: none; } nav { margin-left: auto; } }
 .toast {
   position: fixed; z-index: 60; left: 50%; transform: translateX(-50%);
   bottom: calc(1rem + env(safe-area-inset-bottom)); width: min(92vw, 480px);

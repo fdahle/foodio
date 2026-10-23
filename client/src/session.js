@@ -3,7 +3,8 @@ import { api } from './api.js'
 
 // Who is logged in: { id, username, isAdmin, mustChangePassword }, or null fields when nobody is.
 // welcomed: they've seen the welcome. catchUpUntil: end of their catch-up hour (ms), while ticked dishes get no date.
-const LOGGED_OUT = { id: null, username: '', isAdmin: false, mustChangePassword: false, welcomed: false, catchUpUntil: null }
+// shareStats: they share their stats with the group (and so can see the group's).
+const LOGGED_OUT = { id: null, username: '', isAdmin: false, mustChangePassword: false, welcomed: false, catchUpUntil: null, shareStats: false }
 export const me = reactive({ ...LOGGED_OUT })
 
 export async function loadMe() {

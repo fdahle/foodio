@@ -1,22 +1,22 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { api } from '../api.js'
 import { me } from '../session.js'
-import { formatDate } from '../util.js'
+import { formatDate, pct } from '../util.js'
+import DishRow from '../components/DishRow.vue'
 
-// Admins only (router meta.admin): friends' dish suggestions, invites and the user list.
-const router = useRouter()
+// Admins only (router meta.admin): dishes to add, how the catalogue is used, invites and the user list.
 const users = ref([])
 const invites = ref([])
 const suggestions = ref([])
+const catalogue = ref(null)
 const error = ref('')
 
 async function load() {
   error.value = ''
   try {
-    ;[users.value, invites.value, suggestions.value] = await Promise.all([
-      api('/admin/users'), api('/admin/invites'), api('/admin/suggestions'),
+    ;[users.value, invites.value, suggestions.value, catalogue.value] = await Promise.all([
+      api('/admin/users'), api('/admin/invites'), api('/admin/suggestions'), api('/admin/catalogue'),
     ])
   } catch (e) {
     error.value = e.message
@@ -57,12 +57,15 @@ async function copy(text, what) {
   }
 }
 
-// Suggestions: "Add" opens the cuisine with the add-dish form filled in; it's marked done once added.
-const addSuggestion = s => router.push({ path: `/cuisine/${s.cuisine_id}`, query: { add: s.name, suggestion: s.id } })
-const dismiss = s => run(async () => {
-  await api(`/admin/suggestions/${s.id}`, { method: 'PATCH', body: { status: 'dismissed' } })
+// Dishes to add (friends' suggestions and the admins' own): they're added to the seed by hand, so the list
+// copies as text to work from, and each one is ticked off as done or dismissed.
+const setStatus = (s, status) => run(async () => {
+  await api(`/admin/suggestions/${s.id}`, { method: 'PATCH', body: { status } })
   suggestions.value = suggestions.value.filter(x => x.id !== s.id)
 })
+const suggestionsText = () => suggestions.value
+  .map(s => `- ${s.name} (${s.cuisine || 'no cuisine'})${s.note ? `: ${s.note}` : ''}`)
+  .join('\n')
 
 // Invites: the code is only shown right after creating it (the server keeps just a hash).
 const note = ref('')
@@ -116,7 +119,10 @@ const removeUser = u => run(async () => {
   <p v-if="error" class="error">{{ error }}</p>
 
   <section v-if="suggestions.length" class="card block">
-    <h3>Dish suggestions <span class="muted count">{{ suggestions.length }}</span></h3>
+    <div class="row between">
+      <h3>Dishes to add <span class="muted count">{{ suggestions.length }}</span></h3>
+      <button class="btn small" @click="copy(suggestionsText(), 'suggestions')">{{ copied === 'suggestions' ? 'Copied!' : 'Copy list' }}</button>
+    </div>
     <div class="list">
       <div v-for="s in suggestions" :key="s.id" class="list-item">
         <div class="grow">
@@ -124,10 +130,33 @@ const removeUser = u => run(async () => {
           <span class="muted"> · {{ s.cuisine ? `${s.cuisine_emoji} ${s.cuisine}` : 'no cuisine' }}</span>
           <span class="muted small-line">from {{ s.username || 'a removed user' }}, {{ ago(s.created_at) }}<template v-if="s.note"> · “{{ s.note }}”</template></span>
         </div>
-        <button v-if="s.cuisine_id" class="btn small primary" @click="addSuggestion(s)">Add</button>
-        <button class="btn small" @click="dismiss(s)">Dismiss</button>
+        <button class="btn small primary" @click="setStatus(s, 'done')">Done</button>
+        <button class="btn small" @click="setStatus(s, 'dismissed')">Dismiss</button>
       </div>
     </div>
+  </section>
+
+  <!-- Over all users, sharing or not: which parts of the catalogue nobody uses. -->
+  <section v-if="catalogue" class="card block">
+    <h3>Catalogue</h3>
+    <p class="muted">
+      {{ catalogue.tried }} of {{ catalogue.dishes }} dishes ({{ pct(catalogue.tried, catalogue.dishes) }}%) tried by someone,
+      {{ catalogue.touched - catalogue.tried }} more only on wishlists.
+    </p>
+    <details v-if="catalogue.unstarted.length">
+      <summary>{{ catalogue.unstarted.length }} cuisine{{ catalogue.unstarted.length === 1 ? '' : 's' }} nobody has started</summary>
+      <p class="muted unstarted">
+        <template v-for="(c, i) in catalogue.unstarted" :key="c.id"><router-link :to="`/cuisine/${c.id}`">{{ c.emoji }} {{ c.name }}</router-link><template v-if="i < catalogue.unstarted.length - 1"> · </template></template>
+      </p>
+    </details>
+    <details v-if="catalogue.mostHidden.length">
+      <summary>Most hidden dishes</summary>
+      <div class="list">
+        <DishRow v-for="d in catalogue.mostHidden" :key="d.id" :dish="d" :mark="false">
+          <span class="muted">hidden by {{ d.people }}</span>
+        </DishRow>
+      </div>
+    </details>
   </section>
 
   <section class="card block">
@@ -215,4 +244,6 @@ h1 { font-size: 1.4rem; margin-bottom: .4rem; }
 .actions { gap: 1rem; margin-top: .3rem; font-size: .85rem; }
 .actions .link { padding: 0; }
 .danger-link { color: var(--red, #dc2626); }
+summary { cursor: pointer; font-size: .9rem; }
+.unstarted { margin-top: .4rem; line-height: 1.6; }
 </style>

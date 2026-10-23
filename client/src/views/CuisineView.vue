@@ -7,7 +7,6 @@ import { showToast, alsoIn } from '../toast.js'
 import ProgressBar from '../components/ProgressBar.vue'
 import StarRating from '../components/StarRating.vue'
 import DishSheet from '../components/DishSheet.vue'
-import AddDishSheet from '../components/AddDishSheet.vue'
 import SuggestDishSheet from '../components/SuggestDishSheet.vue'
 import { me } from '../session.js'
 import TagFilter from '../components/TagFilter.vue'
@@ -131,33 +130,11 @@ async function onRemoved({ movedTo }) {
   else await load()
 }
 
-// Admins add dishes (and regions) in a modal; afterwards the new dish is one tap away. Opened from a friend's
-// suggestion (?add=Name&suggestion=id) it starts filled in, and the suggestion is marked done once added.
-const adding = ref(false)
-const addName = ref('')
-watch([cuisine, () => route.query.add], () => {
-  if (cuisine.value && route.query.add && me.isAdmin) {
-    addName.value = String(route.query.add)
-    adding.value = true
-  }
-}, { immediate: true })
-async function onAdded({ id, name, note }) {
-  adding.value = false
-  if (route.query.suggestion) await api(`/admin/suggestions/${route.query.suggestion}`, { method: 'PATCH', body: { status: 'done' } }).catch(() => {})
-  await load()
-  router.replace({ query: {} })
-  showToast(`Added: ${name}${note}`, { label: 'Open', run: () => open({ id }) })
-}
-function closeAdd() {
-  adding.value = false
-  if (route.query.add) router.replace({ query: {} })
-}
-
-// Everyone else suggests dishes for an admin to add.
+// New dishes go into the seed by hand, so everyone (admins too) suggests them; they collect in the Users tab.
 const suggesting = ref(false)
 function onSuggested(name) {
   suggesting.value = false
-  showToast(`Thanks! “${name}” was suggested.`)
+  showToast(me.isAdmin ? `“${name}” is on the list to add.` : `Thanks! “${name}” was suggested.`)
 }
 
 // The back bar only gets its background and divider once the page scrolls under it.
@@ -165,6 +142,9 @@ const stuck = ref(false)
 const onScroll = () => { stuck.value = window.scrollY > 0 }
 onMounted(() => { onScroll(); window.addEventListener('scroll', onScroll, { passive: true }) })
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
+
+// Coming from the list, go back in history so it opens where you left it rather than at the top.
+const backToCuisines = () => (window.history.state?.back === '/cuisines' ? router.back() : router.push('/cuisines'))
 
 async function deleteCuisine() {
   if (!confirm(`Delete ${cuisine.value.name} and all its dishes?`)) return
@@ -177,7 +157,7 @@ async function deleteCuisine() {
   <p v-if="error" class="error">{{ error }}</p>
   <template v-if="cuisine">
     <Teleport defer to="#subbar">
-      <div class="back" :class="{ stuck }"><router-link to="/cuisines" class="muted">← All cuisines</router-link></div>
+      <div class="back" :class="{ stuck }"><router-link to="/cuisines" class="muted" @click.prevent="backToCuisines">← All cuisines</router-link></div>
     </Teleport>
 
     <header class="card head">
@@ -252,8 +232,7 @@ async function deleteCuisine() {
     <p v-if="!sections.length" class="empty">No dishes match these filters.</p>
 
     <div class="add-dish">
-      <button v-if="me.isAdmin" class="btn" @click="addName = ''; adding = true">+ Add a dish</button>
-      <button v-else class="btn" @click="suggesting = true">💡 Suggest a dish</button>
+      <button class="btn" @click="suggesting = true">{{ me.isAdmin ? '+ Add a dish' : '💡 Suggest a dish' }}</button>
     </div>
 
     <p v-if="cuisine.is_custom && me.isAdmin" class="danger-zone">
@@ -262,7 +241,6 @@ async function deleteCuisine() {
 
     <DishSheet v-if="openDish" :dish="openDish" :cuisine-id="cuisine.id" :regions="cuisine.regions"
       @change="replaceDish" @close="close" @removed="onRemoved" />
-    <AddDishSheet v-if="adding" :cuisine="cuisine" :initial-name="addName" @close="closeAdd" @added="onAdded" />
     <SuggestDishSheet v-if="suggesting" :cuisine="cuisine" @close="suggesting = false" @sent="onSuggested" />
   </template>
 </template>

@@ -8,6 +8,7 @@ import { slugify } from '../seed.js'
 import { deriveTags, composeTags, TAGS, TYPES, EXTRAS } from '../tags.js'
 import { CONTINENTS, continentOf } from '../continents.js'
 import { cuisineProgress, computeStats, computeBadges } from '../stats.js'
+import { groupStats, sharesStats, setSharesStats } from '../group.js'
 import { currentChallenge } from '../challenge.js'
 import { catchUpUntil, setCatchUp } from '../catchup.js'
 import { getDiet, setDiet, excludedCount, applyDiet, applyDietAll, EXCLUDED, CONTAINS } from '../diet.js'
@@ -76,7 +77,7 @@ function whiteImageUrl(file) {
 
 // List rows (search, suggestions, wishlist…) show the illustration on white.
 // Expects key, slug and cuisine_slug in the row; they're replaced by a single image URL.
-const withImage = ({ key, slug, cuisine_slug, ...d }) => ({
+export const withImage = ({ key, slug, cuisine_slug, ...d }) => ({
   ...d,
   image: whiteImageUrl(`${key || `${cuisine_slug}/${slug}`}.webp`),
 })
@@ -470,6 +471,17 @@ router.get('/stats', (req, res) => {
   res.json({ stats, badges: computeBadges(stats, req.user.id) })
 })
 
+// Group stats are only for those who share their own (group.js).
+router.get('/group-stats', (req, res) => {
+  if (!sharesStats(req.user.id)) return res.status(403).json({ error: 'Share your stats to see the group’s' })
+  const g = groupStats(req.user.id)
+  if (!g.enough) return res.json(g)
+  for (const k of ['lovedDishes', 'mostTried', 'mostWanted', 'onlyYou']) g[k] = g[k].map(withImage)
+  res.json(g)
+})
+
+router.put('/stats-sharing', (req, res) => res.json({ shareStats: setSharesStats(req.user.id, !!req.body?.on) }))
+
 router.get('/diet', (req, res) => res.json({ ...getDiet(req.user.id), excluded: excludedCount(req.user.id) }))
 
 router.put('/diet', (req, res) => res.json({ ...setDiet(req.user.id, req.body || {}), excluded: excludedCount(req.user.id) }))
@@ -516,12 +528,13 @@ router.delete('/share', (req, res) => {
   res.json({ ok: true })
 })
 
-// A friend asking for a dish that isn't in the app yet; admins see these in the Users tab.
+// A dish that isn't in the app yet, asked for by a friend or noted by an admin; admins see these in the
+// Users tab, and they're added to the seed by hand.
 router.post('/suggestions', (req, res) => {
   const name = str(req.body.name)
   if (!name) return res.status(400).json({ error: 'Name required' })
   const open = db.prepare("SELECT COUNT(*) AS n FROM suggestions WHERE user_id = ? AND status = 'open'").get(req.user.id).n
-  if (open >= 30) return res.status(429).json({ error: 'You have many open suggestions already; wait until they’re handled' })
+  if (open >= 30 && !req.user.isAdmin) return res.status(429).json({ error: 'You have many open suggestions already; wait until they’re handled' })
   const cuisineId = toId(req.body.cuisine_id)
   db.prepare(`
     INSERT INTO suggestions (user_id, cuisine_id, name, note, created_at) VALUES (?, ?, ?, ?, datetime('now'))

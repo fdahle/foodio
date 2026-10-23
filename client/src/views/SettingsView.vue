@@ -59,6 +59,18 @@ async function onImport(e) {
   }
 }
 
+// Group stats (StatsView): sharing yours is what lets you see them.
+const sharingStats = ref(false)
+async function setShareStats(on) {
+  if (!on && !confirm('Stop sharing? Your progress no longer counts in the group stats, and you can’t see them until you share again.')) return
+  sharingStats.value = true
+  try {
+    me.shareStats = (await api('/stats-sharing', { method: 'PUT', body: { on } })).shareStats
+  } finally {
+    sharingStats.value = false
+  }
+}
+
 // Share link
 const shareToken = ref(null)
 const copied = ref(false)
@@ -167,6 +179,17 @@ onMounted(async () => {
 
   <h2 class="group">Sharing & data</h2>
   <section class="card stack">
+    <h3>Group stats</h3>
+    <p class="muted">Share your progress and ratings, without your name, to see everyone’s favourite cuisines and dishes
+      in <router-link to="/stats" class="inline-link">Stats</router-link>. Numbers only show with at least 3 people behind them. Notes stay private.</p>
+    <div class="row">
+      <button v-if="me.shareStats" class="btn" :disabled="sharingStats" @click="setShareStats(false)">Stop sharing</button>
+      <button v-else class="btn primary" :disabled="sharingStats" @click="setShareStats(true)">Share my stats</button>
+      <span v-if="me.shareStats" class="muted">✓ You share your stats.</span>
+    </div>
+  </section>
+
+  <section class="card stack">
     <h3>Share your profile</h3>
     <p class="muted">Anyone with the link can see your map, stats and badges, read-only. Notes stay private.</p>
     <template v-if="shareToken">
@@ -271,4 +294,5 @@ h3, section p { margin: 0; }
 .ok { color: var(--green-dark); }
 .small { font-size: .8rem; }
 a.btn { display: inline-block; }
+.inline-link { text-decoration: underline; }
 </style>

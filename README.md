@@ -29,8 +29,12 @@ Friends join through invite links: in the **Users** tab (👥, admins only) crea
 It works once and for 7 days, and only a hash of it is stored. Each user has their own progress, ratings,
 notes, diet settings, share link and monthly challenge; the catalogue of dishes is shared.
 
-- Only admins add or edit dishes and pictures. Everyone else can hide dishes for themselves and
-  **suggest a dish**; suggestions show up in the Users tab, where *Add* opens the add-dish form filled in.
+- Only admins edit dishes and pictures. Everyone can hide dishes for themselves and **suggest a dish**
+  (for admins the button says *Add a dish*). Suggestions collect under *Dishes to add* in the Users tab and
+  are added to the seed by hand (see CLAUDE.md); *Copy list* copies them as text, *Done* ticks one off.
+- **Stats** (group stats) is opt-in: only people who share their own progress and ratings see the group's,
+  without names, and a number only shows with at least 3 people behind it (`api/group.js`). Admins also get
+  a *Catalogue* overview in the Users tab (over all users): cuisines nobody started, the most hidden dishes.
 - Forgotten password: *Reset password* in the Users tab gives a temporary password to pass on. It ends
   the user's sessions, and after logging in with it they have to choose their own.
 - Locked out as the admin: start once with `RESET_PASSWORD=<temporary password, 12+ characters>`, log in

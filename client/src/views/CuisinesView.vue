@@ -1,21 +1,29 @@
+<script>
+// Kept while the app is open: coming back from a cuisine shows the list straight away (so the scroll
+// position can be restored) and keeps what you typed. It's refreshed in the background.
+const last = { cuisines: [], filter: '' }
+window.addEventListener('foodio:unauthorized', () => Object.assign(last, { cuisines: [], filter: '' }))
+</script>
+
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { api } from '../api.js'
 import { CONTINENTS, pct, medal, loadPref, savePref, fold } from '../util.js'
 import ProgressBar from '../components/ProgressBar.vue'
 
-const cuisines = ref([])
+const cuisines = ref(last.cuisines)
 const error = ref('')
 
 onMounted(async () => {
   try {
-    cuisines.value = await api('/cuisines')
+    cuisines.value = last.cuisines = await api('/cuisines')
   } catch (e) {
     error.value = e.message
   }
 })
 
-const filter = ref('')
+const filter = ref(last.filter)
+watch(filter, v => { last.filter = v })
 const startedOnly = ref(loadPref('startedOnly', false))
 const sort = ref(loadPref('sort', 'name'))
 const collapsed = ref(new Set(loadPref('collapsed', CONTINENTS)))

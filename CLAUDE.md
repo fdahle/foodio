@@ -60,6 +60,15 @@ cd api && node --no-warnings --input-type=module -e "const {seed}=await import('
   Curaçao, …) aren't on the map; that's accepted.
 - New or renamed dishes show their emoji until an illustration is made (`npm run sheet`, see README).
 
+## Dishes to add
+
+Dishes aren't added in the app: the *Add a dish* / *Suggest a dish* button puts them on a list (the
+`suggestions` table, shown under *Dishes to add* in the Users tab), and they're added to the seed here with
+all their details. Read the open ones with
+`sqlite3 data/foodio.db "select s.id, s.name, c.slug, s.note from suggestions s left join cuisines c on c.id = s.cuisine_id where s.status = 'open'"`,
+and once a dish is in the seed, mark it `update suggestions set status = 'done' where id = …`
+(`dismissed` for ones not added: duplicates, near-duplicates, not a dish).
+
 ## Checking changes
 
 After a seed change: reseed, then check that the dish count is what you expect, that new keys didn't
