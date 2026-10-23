@@ -85,6 +85,9 @@ const EXTRA = computed(() => [
     background: var(--card); border-top: 1px solid var(--border);
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* Chrome on Android re-pins the bar a moment late while its address bar slides in or out, which shows a
+     strip of background below it. The bar's background reaches further down, so that strip is the bar. */
+  .tabbar::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 8rem; background: var(--card); }
   .tabbar a {
     display: flex; flex-direction: column; align-items: center; gap: .15rem;
     padding: .4rem 0 .45rem; font-size: .72rem; color: var(--muted);
