@@ -143,9 +143,6 @@ const onScroll = () => { stuck.value = window.scrollY > 0 }
 onMounted(() => { onScroll(); window.addEventListener('scroll', onScroll, { passive: true }) })
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
-// Coming from the list, go back in history so it opens where you left it rather than at the top.
-const backToCuisines = () => (window.history.state?.back === '/cuisines' ? router.back() : router.push('/cuisines'))
-
 async function deleteCuisine() {
   if (!confirm(`Delete ${cuisine.value.name} and all its dishes?`)) return
   await api(`/cuisines/${cuisine.value.id}`, { method: 'DELETE' })
@@ -157,7 +154,7 @@ async function deleteCuisine() {
   <p v-if="error" class="error">{{ error }}</p>
   <template v-if="cuisine">
     <Teleport defer to="#subbar">
-      <div class="back" :class="{ stuck }"><router-link to="/cuisines" class="muted" @click.prevent="backToCuisines">← All cuisines</router-link></div>
+      <div class="back" :class="{ stuck }"><router-link to="/cuisines" class="muted">← All cuisines</router-link></div>
     </Teleport>
 
     <header class="card head">

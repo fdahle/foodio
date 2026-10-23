@@ -4,69 +4,97 @@ import { useRoute } from 'vue-router'
 import { toast, runToastAction } from './toast.js'
 import { me } from './session.js'
 import CatchUpBar from './components/CatchUpBar.vue'
+import NavIcon from './components/NavIcon.vue'
 
 const route = useRoute()
 // A single cuisine (/cuisine/:id) belongs to the Cuisines section.
 const section = computed(() => route.path.startsWith('/cuisine') ? '/cuisines' : route.path)
+const withNav = computed(() => !route.meta.public && !route.meta.bare)
+
+// On a computer all of these are text links in the top bar. On a phone the main ones are a tab bar at the
+// bottom (icon over label), and settings and users are icon buttons in the top bar's corner.
+const TABS = [
+  { to: '/', label: 'Home', icon: 'home' },
+  { to: '/cuisines', label: 'Cuisines', icon: 'cuisines' },
+  { to: '/wishlist', label: 'Wishlist', icon: 'wishlist' },
+  { to: '/stats', label: 'Stats', icon: 'stats' },
+  { to: '/profile', label: 'Profile', icon: 'profile' },
+]
+const EXTRA = computed(() => [
+  { to: '/settings', label: 'Settings', icon: 'settings' },
+  ...(me.isAdmin ? [{ to: '/users', label: 'Users', icon: 'users' }] : []),
+])
 </script>
 
 <template>
   <!-- Views can teleport a bar into #subbar to stick with the top bar (one sticky block, so no seam between them). -->
   <div class="sticky-top">
-    <header v-if="!route.meta.public && !route.meta.bare" class="topbar">
-      <router-link to="/" class="brand">🍽️ <span class="brand-name">Foodio</span></router-link>
-      <nav>
-        <router-link to="/" :class="{ current: section === '/' }" data-text="Home">Home</router-link>
-        <router-link to="/cuisines" :class="{ current: section === '/cuisines' }" data-text="Cuisines">Cuisines</router-link>
-        <router-link to="/wishlist" :class="{ current: section === '/wishlist' }" data-text="Wishlist">Wishlist</router-link>
-        <router-link to="/profile" :class="{ current: section === '/profile' }" data-text="Profile">Profile</router-link>
-        <router-link to="/stats" :class="{ current: section === '/stats' }" aria-label="Stats">
-          <span class="icon">📊</span><span class="label" data-text="Stats">Stats</span>
-        </router-link>
-        <router-link to="/settings" :class="{ current: section === '/settings' }" aria-label="Settings">
-          <span class="icon">⚙️</span><span class="label" data-text="Settings">Settings</span>
-        </router-link>
-        <router-link v-if="me.isAdmin" to="/users" :class="{ current: section === '/users' }" aria-label="Users">
-          <span class="icon">👥</span><span class="label" data-text="Users">Users</span>
+    <header v-if="withNav" class="topbar">
+      <router-link to="/" class="brand">🍽️ Foodio</router-link>
+      <nav class="top-nav">
+        <router-link v-for="t in [...TABS, ...EXTRA]" :key="t.to" :to="t.to" :class="{ current: section === t.to }"
+          :data-text="t.label">{{ t.label }}</router-link>
+      </nav>
+      <nav class="corner">
+        <router-link v-for="t in EXTRA" :key="t.to" :to="t.to" :class="{ current: section === t.to }" :aria-label="t.label">
+          <NavIcon :name="t.icon" />
         </router-link>
       </nav>
     </header>
     <header v-else-if="!['/login', '/register'].includes(route.path)" class="topbar">
       <span class="brand">🍽️ Foodio</span>
     </header>
-    <CatchUpBar v-if="!route.meta.public && !route.meta.bare" />
+    <CatchUpBar v-if="withNav" />
     <div id="subbar"></div>
   </div>
-  <main>
+  <main :class="{ 'with-tabs': withNav }">
     <router-view />
   </main>
-  <div v-if="toast" :key="toast.key" class="toast" role="status">
+  <nav v-if="withNav" class="tabbar">
+    <router-link v-for="t in TABS" :key="t.to" :to="t.to" :class="{ current: section === t.to }">
+      <span class="pill"><NavIcon :name="t.icon" /></span>
+      {{ t.label }}
+    </router-link>
+  </nav>
+  <div v-if="toast" :key="toast.key" class="toast" :class="{ 'with-tabs': withNav }" role="status">
     <span class="grow">{{ toast.message }}</span>
     <button v-if="toast.action" class="link toast-action" @click="runToastAction">{{ toast.action.label }}</button>
   </div>
 </template>
 
 <style scoped>
-nav { display: flex; gap: 1rem; align-items: center; font-size: .95rem; }
-nav a { opacity: .85; }
-nav a.current { opacity: 1; font-weight: 700; }
+.top-nav { display: flex; gap: 1rem; align-items: center; font-size: .95rem; }
+.top-nav a { opacity: .85; }
+.top-nav a.current { opacity: 1; font-weight: 700; }
 /* An invisible bold copy of the label reserves its width, so the bar doesn't shift when a link turns bold. */
-nav [data-text] { display: inline-flex; flex-direction: column; }
-nav [data-text]::after {
+.top-nav [data-text] { display: inline-flex; flex-direction: column; }
+.top-nav [data-text]::after {
   content: attr(data-text); font-weight: 700; height: 0; overflow: hidden; visibility: hidden; pointer-events: none;
 }
-nav .icon { display: none; }
-/* On a phone the last links turn into icons so the bar fits. */
-@media (max-width: 480px) {
-  nav { gap: .8rem; font-size: .88rem; }
-  .brand-name { display: none; }
-  nav .icon { display: inline; }
-  nav a.current .icon { border-bottom: 2px solid #fff; padding-bottom: 2px; }
-  nav .label { display: none; }
+.corner, .tabbar { display: none; }
+.corner { gap: .25rem; margin: -.4rem -.5rem -.4rem 0; }
+.corner a { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; opacity: .85; }
+.corner a.current { opacity: 1; background: rgb(255 255 255 / .2); }
+@media (max-width: 600px) {
+  .top-nav { display: none; }
+  .corner { display: flex; }
+  /* Below the overlays (z-index 50), so dish sheets and dialogs cover it. */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--card); border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar a {
+    display: flex; flex-direction: column; align-items: center; gap: .15rem;
+    padding: .4rem 0 .45rem; font-size: .72rem; color: var(--muted);
+  }
+  .tabbar a.current { color: var(--green-dark); font-weight: 700; }
+  .pill { padding: .2rem 1.1rem; border-radius: 99px; }
+  .current .pill { background: var(--soft); }
+  main.with-tabs { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+  .toast.with-tabs { bottom: calc(4.8rem + env(safe-area-inset-bottom)); }
 }
-@media (max-width: 400px) { nav { gap: .6rem; font-size: .85rem; } }
-/* The logo links home too, so it's what goes on the smallest phones. */
-@media (max-width: 340px) { .brand { display: none; } nav { margin-left: auto; } }
 .toast {
   position: fixed; z-index: 60; left: 50%; transform: translateX(-50%);
   bottom: calc(1rem + env(safe-area-inset-bottom)); width: min(92vw, 480px);

@@ -32,9 +32,16 @@ const router = createRouter({
   ],
   scrollBehavior(to, from, saved) {
     if (saved) return tallEnough(saved.top).then(() => saved)
+    // From a cuisine back to the list by any link (top bar or "All cuisines"): where you left the list.
+    if (to.path === '/cuisines' && from.path.startsWith('/cuisine/')) return tallEnough(cuisinesTop).then(() => ({ top: cuisinesTop }))
     if (to.hash) return { el: to.hash, top: 70 }
     return to.path === from.path ? false : { top: 0 }
   },
+})
+
+let cuisinesTop = 0
+router.beforeEach((_to, from) => {
+  if (from.path === '/cuisines') cuisinesTop = window.scrollY
 })
 
 // Going back, a page that loads its content first is still too short to scroll to where you were:
